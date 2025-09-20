@@ -7,32 +7,37 @@
 <style>
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: url('logo-fundo.png') no-repeat center center fixed;
     background-size: cover;
     color: #333;
 }
 .container {
-    max-width: 600px;
+    max-width: 700px;
     margin: 50px auto;
-    background: rgba(255,255,255,0.95);
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.97);
+    padding: 35px;
+    border-radius: 15px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.15);
 }
-h1 { text-align: center; margin-bottom: 20px; }
-label { display: block; margin: 10px 0 5px; }
+h1 { text-align: center; margin-bottom: 25px; color:#007BFF; }
+label { display: block; margin: 12px 0 6px; font-weight: 600; }
 input[type="number"], select, input[type="date"], input[type="time"] {
-    width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc;
+    width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 7px; border: 1px solid #ccc;
+    font-size: 16px;
 }
 button {
-    background-color: #007BFF; color: #fff; padding: 10px 20px;
-    border: none; border-radius: 5px; cursor: pointer; font-size: 16px;
+    background-color: #28a745; color: #fff; padding: 12px 25px;
+    border: none; border-radius: 8px; cursor: pointer; font-size: 16px;
+    margin-top: 10px;
+    transition: background 0.3s;
 }
+button:hover { background-color: #218838; }
 button:disabled { background-color: #aaa; cursor: not-allowed; }
 .hidden { display: none; }
-.total { font-weight: bold; margin-top: 10px; font-size: 18px; }
+.total { font-weight: bold; margin-top: 15px; font-size: 20px; color:#dc3545; }
 .manutencao { text-decoration: line-through; color: #888; }
+.checkbox-label { font-weight: normal; }
 </style>
 </head>
 <body>
@@ -57,12 +62,9 @@ button:disabled { background-color: #aaa; cursor: not-allowed; }
         <option value="2">Com frete R$ 2,00</option>
     </select>
 
-    <label><input type="checkbox" id="pdf"> Enviar PDF (opcional)</label>
-    <small>Se envia o PDF podemos imprimir logo e você só busca ou entregamos.</small>
+    <label class="checkbox-label"><input type="checkbox" id="pdf"> Enviar PDF (R$0,10 por página)</label>
 
-    <label><input type="checkbox" id="fiado"> Fiado (R$5,00)</label>
-
-    <div class="total">Total: R$ <span id="total">7,50</span></div>
+    <label class="checkbox-label"><input type="checkbox" id="fiado"> Fiado (R$5,00)</label>
 
     <button id="proxima">Próxima etapa</button>
 </div>
@@ -83,29 +85,76 @@ button:disabled { background-color: #aaa; cursor: not-allowed; }
         <option value="20:00">20:00</option>
     </select>
 
-    <button id="agendar">Agendar</button>
+    <label>Forma de pagamento:</label>
+    <select id="pagamento">
+        <option value="dinheiro">Dinheiro</option>
+        <option value="pix">PIX (chave: 71982513027)</option>
+    </select>
+
+    <button id="proxima2">Próxima etapa</button>
     <button id="voltar">Voltar</button>
+</div>
+
+<!-- Etapa 3 -->
+<div id="etapa3" class="hidden">
+    <label>Assinar plano fidelidade por R$15/mês?</label>
+    <label class="checkbox-label"><input type="checkbox" id="fidelidade"> Sim, quero</label>
+    <small>Benefício: impressões grátis enquanto ativo. Cancelamento a qualquer momento. Mantém 4 meses grátis após cancelar.</small>
+
+    <div class="total">Valor final: R$ <span id="totalFinal">0,00</span></div>
+
+    <button id="confirmar">Confirmar Agendamento</button>
+    <button id="voltar2">Voltar</button>
 </div>
 
 </div>
 
 <script>
+// Preços
+const precoNormal = 2.5;
+const precoCombo = 1.0;
+const taxaTrabalho = 1.0;
+const taxaPDF = 0.10;
+const taxaFiado = 5.0;
+const taxaSegunda = 2.0;
+
 // Elementos
 const servicoEl = document.getElementById('servico');
+const quantidadeEl = document.getElementById('quantidade');
+const freteEl = document.getElementById('frete');
+const pdfEl = document.getElementById('pdf');
+const fiadoEl = document.getElementById('fiado');
+const totalFinalEl = document.getElementById('totalFinal');
+
 const etapa1El = document.getElementById('etapa1');
 const etapa2El = document.getElementById('etapa2');
+const etapa3El = document.getElementById('etapa3');
 const proximaBtn = document.getElementById('proxima');
+const proxima2Btn = document.getElementById('proxima2');
 const voltarBtn = document.getElementById('voltar');
-const agendarBtn = document.getElementById('agendar');
+const voltar2Btn = document.getElementById('voltar2');
+const confirmarBtn = document.getElementById('confirmar');
 const dataEl = document.getElementById('data');
 const horarioEl = document.getElementById('horario');
-const totalEl = document.getElementById('total');
+const pagamentoEl = document.getElementById('pagamento');
+const fidelidadeEl = document.getElementById('fidelidade');
 
-// Avançar etapa
+// Avançar etapa 1 -> 2
 proximaBtn.addEventListener('click', () => {
     etapa1El.classList.add('hidden');
     etapa2El.classList.remove('hidden');
     atualizarHorarios();
+});
+
+// Avançar etapa 2 -> 3
+proxima2Btn.addEventListener('click', () => {
+    if(!dataEl.value || !horarioEl.value){
+        alert('Escolha data e horário.');
+        return;
+    }
+    etapa2El.classList.add('hidden');
+    etapa3El.classList.remove('hidden');
+    calcularValorFinal();
 });
 
 // Voltar
@@ -113,14 +162,27 @@ voltarBtn.addEventListener('click', () => {
     etapa2El.classList.add('hidden');
     etapa1El.classList.remove('hidden');
 });
+voltar2Btn.addEventListener('click', () => {
+    etapa3El.classList.add('hidden');
+    etapa2El.classList.remove('hidden');
+});
 
-// Bloqueio horários já agendados
-function atualizarHorarios() {
+// Bloqueio horários
+function atualizarHorarios(){
     const agendamentos = JSON.parse(localStorage.getItem('agendamentos') || '[]');
     const dataEscolhida = dataEl.value;
+    const diaSemana = new Date(dataEscolhida).getDay(); // 0=domingo, 1=segunda, 2=terça...
+    for(let option of horarioEl.options) option.disabled = false;
+
+    // Bloqueio horários almoço
     for(let option of horarioEl.options){
-        option.disabled = false;
+        const hora = parseInt(option.value.split(':')[0]);
+        if((diaSemana>=2 && diaSemana<=5 && hora>=12 && hora<18) || (diaSemana===0 || diaSemana===6) && hora>=12 && hora<14){
+            option.disabled = true;
+        }
     }
+
+    // Bloqueio horários já agendados
     for(let ag of agendamentos){
         if(ag.data === dataEscolhida){
             for(let option of horarioEl.options){
@@ -130,22 +192,32 @@ function atualizarHorarios() {
     }
 }
 
-// Atualiza horários ao mudar data
-dataEl.addEventListener('change', atualizarHorarios);
+// Calcular valor final
+function calcularValorFinal(){
+    let qtd = parseInt(quantidadeEl.value) || 1;
+    let frete = parseFloat(freteEl.value) || 0;
+    let base = qtd === 5 ? precoCombo * qtd : precoNormal * qtd;
+    let pdf = pdfEl.checked ? qtd * taxaPDF : 0;
+    let fiado = fiadoEl.checked ? taxaFiado : 0;
 
-// Agendar
-agendarBtn.addEventListener('click', () => {
+    // Verifica taxa de segunda-feira
+    let taxaSeg = 0;
+    const diaSemana = new Date(dataEl.value).getDay(); // 0=domingo, 1=segunda
+    if(diaSemana === 1) taxaSeg = taxaSegunda;
+
+    let total = base + pdf + frete + taxaTrabalho + fiado + taxaSeg;
+    totalFinalEl.textContent = total.toFixed(2);
+}
+
+// Confirmar
+confirmarBtn.addEventListener('click', () => {
     const data = dataEl.value;
     const horario = horarioEl.value;
-    if(!data || !horario){
-        alert('Escolha data e horário.');
-        return;
-    }
+    if(!data || !horario) return;
     let agendamentos = JSON.parse(localStorage.getItem('agendamentos') || '[]');
     agendamentos.push({data, horario});
     localStorage.setItem('agendamentos', JSON.stringify(agendamentos));
-    alert(`Agendado para ${data} às ${horario}`);
-    atualizarHorarios();
+    alert(`Agendamento confirmado para ${data} às ${horario}`);
 });
 </script>
 
