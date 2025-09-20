@@ -15,29 +15,63 @@ body {
 .container {
     max-width: 700px;
     margin: 50px auto;
-    background: rgba(255,255,255,0.97);
+    background: rgba(255,255,255,0.95);
     padding: 35px;
     border-radius: 15px;
-    box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    transition: all 0.3s ease-in-out;
 }
-h1 { text-align: center; margin-bottom: 25px; color:#007BFF; }
+h1 { 
+    text-align: center; 
+    margin-bottom: 25px; 
+    color:#007BFF; 
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
 label { display: block; margin: 12px 0 6px; font-weight: 600; }
 input[type="number"], select, input[type="date"], input[type="time"] {
-    width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 7px; border: 1px solid #ccc;
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 12px; 
+    border-radius: 10px; 
+    border: 1px solid #ccc;
     font-size: 16px;
+    transition: border 0.3s;
+}
+input[type="number"]:focus, select:focus, input[type="date"]:focus, input[type="time"]:focus {
+    border: 2px solid #007BFF;
 }
 button {
-    background-color: #28a745; color: #fff; padding: 12px 25px;
-    border: none; border-radius: 8px; cursor: pointer; font-size: 16px;
+    background: linear-gradient(90deg,#28a745,#20c997);
+    color: #fff; 
+    padding: 14px 28px;
+    border: none; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    font-size: 16px;
     margin-top: 10px;
-    transition: background 0.3s;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
-button:hover { background-color: #218838; }
+button:hover { 
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+}
 button:disabled { background-color: #aaa; cursor: not-allowed; }
 .hidden { display: none; }
-.total { font-weight: bold; margin-top: 15px; font-size: 20px; color:#dc3545; }
+.total { 
+    font-weight: bold; 
+    margin-top: 15px; 
+    font-size: 22px; 
+    color:#dc3545; 
+    text-align: center;
+}
 .manutencao { text-decoration: line-through; color: #888; }
-.checkbox-label { font-weight: normal; }
+.checkbox-label { font-weight: normal; cursor: pointer; }
+input[type="checkbox"] { margin-right: 10px; transform: scale(1.2); }
+@media(max-width:600px){
+    .container { margin: 20px; padding: 25px; }
+    button { width: 100%; }
+}
 </style>
 </head>
 <body>
@@ -62,7 +96,7 @@ button:disabled { background-color: #aaa; cursor: not-allowed; }
         <option value="2">Com frete R$ 2,00</option>
     </select>
 
-    <label class="checkbox-label"><input type="checkbox" id="pdf"> Enviar PDF (R$0,10 por página)</label>
+    <label class="checkbox-label"><input type="checkbox" id="pdf"> Enviar PDF (R$0,10/página)</label>
 
     <label class="checkbox-label"><input type="checkbox" id="fiado"> Fiado (R$5,00)</label>
 
@@ -171,7 +205,8 @@ voltar2Btn.addEventListener('click', () => {
 function atualizarHorarios(){
     const agendamentos = JSON.parse(localStorage.getItem('agendamentos') || '[]');
     const dataEscolhida = dataEl.value;
-    const diaSemana = new Date(dataEscolhida).getDay(); // 0=domingo, 1=segunda, 2=terça...
+    if(!dataEscolhida) return;
+    const diaSemana = new Date(dataEscolhida).getDay(); // 0=domingo, 1=segunda
     for(let option of horarioEl.options) option.disabled = false;
 
     // Bloqueio horários almoço
@@ -200,9 +235,9 @@ function calcularValorFinal(){
     let pdf = pdfEl.checked ? qtd * taxaPDF : 0;
     let fiado = fiadoEl.checked ? taxaFiado : 0;
 
-    // Verifica taxa de segunda-feira
+    // Taxa segunda-feira
     let taxaSeg = 0;
-    const diaSemana = new Date(dataEl.value).getDay(); // 0=domingo, 1=segunda
+    const diaSemana = new Date(dataEl.value).getDay();
     if(diaSemana === 1) taxaSeg = taxaSegunda;
 
     let total = base + pdf + frete + taxaTrabalho + fiado + taxaSeg;
